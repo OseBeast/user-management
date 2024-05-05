@@ -245,3 +245,29 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
     if await UserService.verify_email_with_token(db, user_id, token):
         return {"message": "Email verified successfully"}
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
+
+#end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+@router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+async def upload_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+    """
+    Delete a user by their ID.
+
+    - **user_id**: UUID of the user to delete.
+    """
+    success = await UserService.delete(db, user_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"message": "Image Added Successfully"}
+
+#end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+@router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+async def update_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+    """
+    Delete a user by their ID.
+
+    - **user_id**: UUID of the user to delete.
+    """
+    success = await UserService.delete(db, user_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"message": "Image Added Successfully"}
