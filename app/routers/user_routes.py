@@ -21,7 +21,7 @@ Key Highlights:
 from builtins import dict, int, len, str
 from datetime import timedelta
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user, get_db, get_email_service, require_role
@@ -33,6 +33,9 @@ from app.services.jwt_service import create_access_token
 from app.utils.link_generation import create_user_links, generate_pagination_links
 from app.dependencies import get_settings
 from app.services.email_service import EmailService
+from typing import List
+from minio import Minio
+from minio.error import ResponseError
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
@@ -247,27 +250,64 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
 
 #end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
-@router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
-async def upload_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
-    """
-    Delete a user by their ID.
+# @router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def upload_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#    """
+#    Delete a user by their ID.
 
-    - **user_id**: UUID of the user to delete.
-    """
-    success = await UserService.delete(db, user_id)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return {"message": "Image Added Successfully"}
+#    - **user_id**: UUID of the user to delete.
+#    """
+#    success = await UserService.delete(db, user_id)
+#    if not success:
+#        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#    return {"message": "Image Added Successfully"}
 
 #end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
 @router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
 async def update_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
-    """
-    Delete a user by their ID.
+#    """
+#    Delete a user by their ID.
+#
+#    - **user_id**: UUID of the user to delete.
+#    """
+#    success = await UserService.delete(db, user_id)
+#    if not success:
+#        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#    return {"message": "Image Added Successfully"}
+   """
+    Upload Image of User by ID
 
-    - **user_id**: UUID of the user to delete.
+
+    
+    - **user_id**: UUID of the user upload picture
     """
-    success = await UserService.delete(db, user_id)
+    client = Minio(
+       "localhost:9001",
+       access_key="57yzL2JnGkuqzVMsQYid",
+       secret_key="N7KpMaWd7Pg5Nf4fPnDcUKDeycd5LYKrQFWun9Zl",
+       secure=False,
+    )
+   # Make 'profile-pics' bucket if not exist.
+    found = client.bucket_exists("profile-pics")
+    if not found:
+       client.make_bucket("profile-pics")
+    else:
+       print("Bucket 'profile-pics' already exists")
+    
+    try:
+        # Save file to MinIO
+        client.put_object(
+            bucket_name="profile-pics",
+            object_name=file.filename,
+            data=file.file,
+            length=file._file.seek(0, 2),
+            content_type=file.content_type
+        )
+    except ResponseError as err:
+        return {"error": f"Failed to upload file: {err}"}
+    
+    image_url = f"localhost:9001/profile-pics/{file.filename}"
+    success = await UserService.upload_image(db, user_id, image_url)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return {"message": "Image Added Successfully"}
+    return {"message": "Image Updated Successfully"}
