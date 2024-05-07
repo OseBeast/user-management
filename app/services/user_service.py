@@ -146,6 +146,19 @@ class UserService:
         return None
 
     @classmethod
+    async def upload_image(cls, session: AsyncSession, user_id: UUID, img_url: str) -> bool:
+        user = await cls.get_by_id(session, user_id)
+        if not user:
+            logger.info(f"User with ID {user_id} not found.")
+            return False
+        else:
+            user.profile_picture_url = img_url
+        #await session.delete(user)
+            session.add(user)
+            await session.commit()
+            return True
+
+    @classmethod
     async def is_account_locked(cls, session: AsyncSession, email: str) -> bool:
         user = await cls.get_by_email(session, email)
         return user.is_locked if user else False
