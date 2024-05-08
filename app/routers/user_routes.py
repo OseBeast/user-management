@@ -35,7 +35,7 @@ from app.dependencies import get_settings
 from app.services.email_service import EmailService
 from typing import List
 from minio import Minio
-from minio.error import ResponseError
+from minio.error import InvalidResponseError
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
@@ -250,37 +250,30 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
 
 #end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
-# @router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
-# async def upload_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
-#    """
-#    Delete a user by their ID.
+# @router.post("/upload", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def upload_user_img(file: UploadFile = File(...) , db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
 
-#    - **user_id**: UUID of the user to delete.
-#    """
-#    success = await UserService.delete(db, user_id)
-#    if not success:
-#        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-#    return {"message": "Image Added Successfully"}
+#     - **user_id**: UUID of the user upload picture
+#     """
+#     image = await file.read()
+#     success = await UserService.upload_image(db, file)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Added Successfully"}
 
 #end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
-@router.post("/users/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
-async def update_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
-#    """
-#    Delete a user by their ID.
-#
-#    - **user_id**: UUID of the user to delete.
-#    """
-#    success = await UserService.delete(db, user_id)
-#    if not success:
-#        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-#    return {"message": "Image Added Successfully"}
-   """
+@router.put("/upload/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+async def update_user_img(user_id: UUID,  file: UploadFile = File(...),  db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+    """
     Upload Image of User by ID
 
 
     
     - **user_id**: UUID of the user upload picture
     """
+
     client = Minio(
        "localhost:9001",
        access_key="57yzL2JnGkuqzVMsQYid",
@@ -303,7 +296,7 @@ async def update_user_img(user_id: UUID, db: AsyncSession = Depends(get_db), tok
             length=file._file.seek(0, 2),
             content_type=file.content_type
         )
-    except ResponseError as err:
+    except InvalidResponseError as err:
         return {"error": f"Failed to upload file: {err}"}
     
     image_url = f"localhost:9001/profile-pics/{file.filename}"
