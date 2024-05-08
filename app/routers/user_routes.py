@@ -275,9 +275,9 @@ async def update_user_img(user_id: UUID,  file: UploadFile = File(...),  db: Asy
     """
 
     client = Minio(
-       "localhost:9001",
-       access_key="57yzL2JnGkuqzVMsQYid",
-       secret_key="N7KpMaWd7Pg5Nf4fPnDcUKDeycd5LYKrQFWun9Zl",
+       "localhost:9000",
+       access_key="nmE8QGxw5VOZQ24g60gB",
+       secret_key="VFNje93OrTWyy9YoTebLfUryHL8OUA8MiIejvTfo",
        secure=False,
     )
    # Make 'profile-pics' bucket if not exist.
