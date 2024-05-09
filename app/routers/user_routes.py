@@ -266,6 +266,55 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
 #end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
 #@router.put("/upload/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
 
+#end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+# @router.post("/upload", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def upload_user_img(file: UploadFile = File(...) , db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
+
+#     - **user_id**: UUID of the user upload picture
+#     """
+#     image = await file.read()
+#     success = await UserService.upload_image(db, file)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Added Successfully"}
+
+#end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+# @router.put("/upload/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def update_user_img(user_id: UUID,  file: UploadFile = File(...),  db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
+
+#     - **user_id**: UUID of the user upload picture
+#     """
+
+
+#    # Make 'profile-pics' bucket if not exist.
+#     found = client.bucket_exists("profile-pics")
+#     if not found:
+#        client.make_bucket("profile-pics")
+#     else:
+#        print("Bucket 'profile-pics' already exists")
+    
+#     try:
+#         # Save file to MinIO
+#         client.put_object(
+#             bucket_name="profile-pics",
+#             object_name=file.filename,
+#             data=file.file,
+#             length=file._file.seek(0, 2),
+#             content_type=file.content_type
+#         )
+#     except InvalidResponseError as err:
+#         return {"error": f"Failed to upload file: {err}"}
+    
+#     image_url = f"localhost:9001/profile-pics/{file.filename}"
+#     success = await UserService.upload_image(db, user_id, image_url)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Updated Successfully"}
+
 @router.put("/upload/{user_id}", response_model=UserResponse, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
 async def update_user_img(user_id: UUID,  user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
     """
