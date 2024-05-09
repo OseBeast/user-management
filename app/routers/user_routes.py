@@ -21,7 +21,7 @@ Key Highlights:
 from builtins import dict, int, len, str
 from datetime import timedelta
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request, UploadFile, File
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_current_user, get_db, get_email_service, require_role
@@ -33,6 +33,9 @@ from app.services.jwt_service import create_access_token
 from app.utils.link_generation import create_user_links, generate_pagination_links
 from app.dependencies import get_settings
 from app.services.email_service import EmailService
+from typing import List
+from minio import Minio
+from minio.error import InvalidResponseError
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 settings = get_settings()
@@ -245,3 +248,97 @@ async def verify_email(user_id: UUID, token: str, db: AsyncSession = Depends(get
     if await UserService.verify_email_with_token(db, user_id, token):
         return {"message": "Email verified successfully"}
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired verification token")
+
+#end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+# @router.post("/upload", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def upload_user_img(file: UploadFile = File(...) , db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
+
+#     - **user_id**: UUID of the user upload picture
+#     """
+#     image = await file.read()
+#     success = await UserService.upload_image(db, file)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Added Successfully"}
+
+#end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+#@router.put("/upload/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+
+#end point for adding profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+# @router.post("/upload", status_code=status.HTTP_200_OK, name="upload_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def upload_user_img(file: UploadFile = File(...) , db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
+
+#     - **user_id**: UUID of the user upload picture
+#     """
+#     image = await file.read()
+#     success = await UserService.upload_image(db, file)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Added Successfully"}
+
+#end point for updating profile picture Todo: add functions in service and model to give functionality then add schema to pass in the image as a parameter
+# @router.put("/upload/{user_id}", status_code=status.HTTP_200_OK, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+# async def update_user_img(user_id: UUID,  file: UploadFile = File(...),  db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+#     """
+#     Upload Image of User by ID
+
+#     - **user_id**: UUID of the user upload picture
+#     """
+
+
+#    # Make 'profile-pics' bucket if not exist.
+#     found = client.bucket_exists("profile-pics")
+#     if not found:
+#        client.make_bucket("profile-pics")
+#     else:
+#        print("Bucket 'profile-pics' already exists")
+    
+#     try:
+#         # Save file to MinIO
+#         client.put_object(
+#             bucket_name="profile-pics",
+#             object_name=file.filename,
+#             data=file.file,
+#             length=file._file.seek(0, 2),
+#             content_type=file.content_type
+#         )
+#     except InvalidResponseError as err:
+#         return {"error": f"Failed to upload file: {err}"}
+    
+#     image_url = f"localhost:9001/profile-pics/{file.filename}"
+#     success = await UserService.upload_image(db, user_id, image_url)
+#     if not success:
+#         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+#     return {"message": "Image Updated Successfully"}
+
+@router.put("/upload/{user_id}", response_model=UserResponse, name="update_user_img", tags=["User Management Requires (Admin or Manager Roles)"])
+async def update_user_img(user_id: UUID,  user_update: UserUpdate, request: Request, db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme), current_user: dict = Depends(require_role(["ADMIN", "MANAGER"]))):
+    """
+    Upload Image of User by ID
+
+    - **user_id**: UUID of the user upload picture
+    """
+    user_data = user_update.model_dump(exclude_unset=True)
+    updated_user = await UserService.upload_image(db, user_id, user_data)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return UserResponse.model_construct(
+        id=updated_user.id,
+        bio=updated_user.bio,
+        first_name=updated_user.first_name,
+        last_name=updated_user.last_name,
+        nickname=updated_user.nickname,
+        email=updated_user.email,
+        role=updated_user.role,
+        last_login_at=updated_user.last_login_at,
+        profile_picture_url=updated_user.profile_picture_url,
+        github_profile_url=updated_user.github_profile_url,
+        linkedin_profile_url=updated_user.linkedin_profile_url,
+        created_at=updated_user.created_at,
+        updated_at=updated_user.updated_at,
+        links=create_user_links(updated_user.id, request)
+    )

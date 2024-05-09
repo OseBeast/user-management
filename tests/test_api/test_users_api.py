@@ -190,3 +190,10 @@ async def test_list_users_unauthorized(async_client, user_token):
         headers={"Authorization": f"Bearer {user_token}"}
     )
     assert response.status_code == 403  # Forbidden, as expected for regular user
+@pytest.mark.asyncio
+async def test_user_image_upload(async_client, admin_user, admin_token):
+    updated_data = {"profile_picture_url": "http://localhost:9000/profile-pics/keith.jpg"}
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = await async_client.put(f"/upload/{admin_user.id}", json=updated_data, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["profile_picture_url"] == updated_data["profile_picture_url"]

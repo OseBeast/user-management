@@ -26,6 +26,8 @@ RUN python -m venv /.venv \
     && pip install --upgrade pip \
     && pip install -r requirements.txt
 
+COPY keith_w_pic.jpg .
+
 # Define a second stage for the runtime, using the same Debian Bookworm slim image
 FROM python:3.12-slim-bookworm as final
 
