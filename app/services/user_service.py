@@ -146,17 +146,23 @@ class UserService:
         return None
 
     @classmethod
-    async def upload_image(cls, session: AsyncSession, user_id: UUID, img_url: str) -> bool:
-        user = await cls.get_by_id(session, user_id)
-        if not user:
-            logger.info(f"User with ID {user_id} not found.")
-            return False
-        else:
-            user.profile_picture_url = img_url
-        #await session.delete(user)
-            session.add(user)
-            await session.commit()
-            return True
+    async def upload_image(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> bool:
+        try:
+            # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
+            validated_data = UserUpdate(**update_data).model_dump(exclude_unset=True)
+            query = update(User).where(User.id == user_id).values(**validated_data).execution_options(synchronize_session="fetch")
+            await cls._execute_query(session, query)
+            updated_user = await cls.get_by_id(session, user_id)
+            if updated_user:
+                session.refresh(updated_user)  # Explicitly refresh the updated user object
+                logger.info(f"User {user_id} updated successfully.")
+                return updated_user
+            else:
+                logger.error(f"User {user_id} not found after update attempt.")
+            return None
+        except Exception as e:  # Broad exception handling for debugging
+            logger.error(f"Error during user update: {e}")
+            return None
 
     @classmethod
     async def is_account_locked(cls, session: AsyncSession, email: str) -> bool:
